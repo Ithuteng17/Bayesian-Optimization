@@ -1,0 +1,175 @@
+---
+title: "ARIMA process"
+author: 'Ithuteng Ntakhwana ID: 201801847'
+date: "2024-04-08"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+---
+We will be exploring the Airline passengers dataset in R and fitting 3 ARIMA models 
+```{r}
+#load the libraries
+library(forecast)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+#Load Air passengers dataset embedded in R
+passengers = data.frame(year = rep(1949:1960, each = 12),
+                        month = c(1:12,1:12,1:12,1:12,1:12,1:12,1:12,1:12,1:12,1:12,1:12,1:12),
+                        fq = c(112, 118, 132, 129, 121, 135, 148, 148, 136, 119, 104, 118,
+                                  115, 126, 141, 135, 125, 149, 170, 170, 158, 133, 114, 140,
+                                  145, 150, 178, 163, 172, 178, 199, 199, 184, 162, 146, 166,
+                                  171, 180, 193, 181, 183, 218, 230, 242, 209, 191, 172, 194,
+                                  196, 196, 236, 235, 229, 243, 264, 272, 237, 211, 180, 201,
+                                  204, 188, 235, 227, 234, 264, 302, 293, 259, 229, 203, 229,
+                                  242, 233, 267, 269, 270, 315, 364, 347, 312, 274, 237, 278,
+                                  284, 277, 317, 313, 318, 374, 413, 405, 355, 306, 271, 306,
+                                  315, 301, 356, 348, 355, 422, 465, 467, 404, 347, 305, 336,
+                                  340, 318, 362, 348, 363, 435, 491, 505, 404, 359, 310, 337,
+                                  360, 342, 406, 396, 420, 472, 548, 559, 463, 407, 362, 405,
+                                  417, 391, 419, 461, 472, 535, 622, 606, 508, 461, 390, 432
+                        ))
+
+#first rows of passengers dataset
+head(passengers)
+
+#stucture of dataset
+str(passengers)
+
+#summary of dataset
+summary(passengers)
+
+
+#check for missing values
+library(zoo)
+passengers = na.approx(passengers)
+
+
+
+#summary of the air plane passengers dataset, mean, median etc
+summary(passengers)
+
+```
+
+Explanatory Data Analysis of the Time Series
+```{r}
+#Creating Time Series object
+passengers_time = ts(passengers[,-c(1,2)], frequency = 12,start = c(1949,1))
+passengers_time
+
+#plot of Time Series
+ggplot(data = data.frame(Date = time(passengers_time),
+                         Passengers = passengers_time),
+                         aes(x = Date, y = Passengers)) + geom_line() + 
+                        labs(title = "Monthly Airline Passengers numbers from 1949-1960",
+                             x = "Year",
+                             y = "Number of Passengers")
+                        
+#Finding the trend and seasonal components
+dec = decompose(passengers_time)
+plot(dec)
+```
+
+
+
+```{r}
+#ARIMA(p,q) components
+#Autocorrelation function (ACF)
+#Partial Autocorrelation function (PACF)
+par(mfrow = c(1,2))
+acf(passengers_time, main = "ACF of Air Passengers Dataset")
+pacf(passengers_time,main = "PACF of Air Passengers Dataset")
+
+```
+ 
+```{r}
+#Fit ARIMA model ARIMA(0,1,1)
+ar_model = arima(passengers_time, order = c(0,1,1),seasonal = list(order = c(0,1,1) ,period = 12))
+
+#Plotting residuals for ARIMA (0,1,1)
+err_mod = resid(ar_model)
+plot(err_mod)
+acf(err_mod)
+pacf(err_mod)
+
+#summary of ARIMA(0,1,1) model
+summary(ar_model)
+
+
+```
+
+```{r}
+#Fit ARIMA model ARIMA(1,1,1)
+ar0_model = arima(passengers_time, order = c(1,1,1),seasonal = list(order = c(1,1,1) ,period = 12))
+
+#Plotting residuals for ARIMA (1,1,1)
+err0_mod = resid(ar0_model)
+plot(err0_mod)
+acf(err0_mod)
+pacf(err0_mod)
+
+#summary of ARIMA(1,1,1) model
+summary(ar0_model)
+
+```
+
+```{r}
+#fitting an auto ARIMA model
+ar1_model = auto.arima(passengers_time)
+ar1_model
+
+#Plotting residuals for auto ARIMA model 
+err1_mod = resid(ar1_model)
+plot(err1_mod)
+acf(err1_mod)
+pacf(err1_mod)
+
+#summary of auto ARIMA model
+summary(ar1_model)
+
+```
+
+```{r}
+#forecasting for ARIMA(0,1,1) model
+ 
+forcast_v0 = forecast(object = ar_model, h =12 )
+forcast_v0
+
+#Next 12 months
+plot(forcast_v0,
+     main = "Forecast for the next 12 Months",
+     xlab = "Time",
+     ylab = "Number of Passengers")
+
+```
+
+```{r}
+#forecasting for ARIMA(1,1,1) model
+
+forcast_v1 = forecast(object = ar0_model, h =12 )
+forcast_v1
+
+#Next 12 months
+plot(forcast_v1,
+     main = "Forecast for the next 12 Months",
+     xlab = "Time",
+     ylab = "Number of Passengers")
+
+```
+
+```{r}
+#forecasting for ARIMA(1,1,1) model
+
+forcast_v2 = forecast(object = ar1_model, h =12 )
+forcast_v2
+
+#Next 12 months
+plot(forcast_v2,
+     main = "Forecast for the next 12 Months",
+     xlab = "Time",
+     ylab = "Number of Passengers")
+```
